@@ -28,14 +28,14 @@ def setup_lighting():
 
     light_position = [light_x, light_y, light_z, 0]  # Directional light
 
-    ambient_light = [0.2, 0.2, 0.2, 1.0]
+    ambient_light = [0.2, 0.2, 0.2, 0.5]
     diffuse_light = [0.8, 0.8, 0.8, 1.0]
     specular_light = [1.0, 1.0, 1.0, 1.0]
 
     glLightfv(GL_LIGHT0, GL_POSITION, light_position)
-    glLightfv(GL_LIGHT0, GL_AMBIENT, ambient_light)
+    # glLightfv(GL_LIGHT0, GL_AMBIENT, ambient_light)
     glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse_light)
-    glLightfv(GL_LIGHT0, GL_SPECULAR, specular_light)
+    # glLightfv(GL_LIGHT0, GL_SPECULAR, specular_light)
 
     glEnable(GL_COLOR_MATERIAL)
     glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
@@ -107,13 +107,6 @@ def keyboard(key, x, y):
         angle_y -= 5
     elif key == b'd':
         angle_y += 5
-    glutPostRedisplay()
-
-def idle():
-    global angle_sun
-    angle_sun += 0.5  # Adjust speed of sun movement
-    if angle_sun >= 360:
-        angle_sun -= 360  # Keep it within 0-360 degrees
     glutPostRedisplay()
 
 def main():
