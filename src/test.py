@@ -6,20 +6,28 @@ import math
 from PIL import Image
 
 angle_x, angle_y = 0, 0  # Rotation angles for navigation
-H, W = 100, 200  # Number of stacks and slices
-last_x, last_y = 0, 0  # Last mouse positions
+angle_sun = 0
 
 # Load image
-image = Image.open("map.jpg").convert("RGB")
+image = Image.open("map1.png").convert("RGB")
 image_width, image_height = image.size
 pixels = image.load()
 
+H, W = 200, 200  # Number of stacks and slices
+
 def setup_lighting():
-    """ Sets up OpenGL lighting. """
+    """ Sets up OpenGL lighting with a moving sun that is independent of Earth's rotation. """
     glEnable(GL_LIGHTING)
     glEnable(GL_LIGHT0)
-    
-    light_position = [1, 1, 1, 0]
+
+    # Sun moves in a circular path independent of Earth's rotation
+    radius_sun_orbit = 5  # Distance of the sun from the Earth
+    light_x = math.cos(math.radians(angle_sun)) * radius_sun_orbit
+    light_y = math.sin(math.radians(angle_sun)) * radius_sun_orbit
+    light_z = 0  # Keep some height to simulate realistic lighting
+
+    light_position = [light_x, light_y, light_z, 0]  # Directional light
+
     ambient_light = [0.2, 0.2, 0.2, 1.0]
     diffuse_light = [0.8, 0.8, 0.8, 1.0]
     specular_light = [1.0, 1.0, 1.0, 1.0]
@@ -33,11 +41,13 @@ def setup_lighting():
     glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
 
 
+
 def draw_sphere(radius, slices, stacks):
+    setup_lighting()
     """ Renders a sphere with per-vertex coloring from the image. """
     for i in range(stacks):
-        lat0 = math.pi * (-0.5 + (i / stacks))
-        lat1 = math.pi * (-0.5 + ((i + 1) / stacks))
+        lat0 = -math.pi * (-0.5 + (i / stacks))
+        lat1 = -math.pi * (-0.5 + ((i + 1) / stacks))
         z0, zr0 = math.sin(lat0), math.cos(lat0)
         z1, zr1 = math.sin(lat1), math.cos(lat1)
         
@@ -64,17 +74,20 @@ def draw_sphere(radius, slices, stacks):
 
 
 def display():
-    global angle_x, angle_y
+    global angle_x, angle_y, angle_sun
+    angle_sun += 1.5  # Adjust speed of sun movement
+    if angle_sun >= 360:
+        angle_sun -= 360  # Keep it within 0-360 degrees
+    
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glLoadIdentity()
-    gluLookAt(0, 0, 5, 0, 0, 0, 0, 1, 0)
+    gluLookAt(5, 0, 0, 0, 0, 0, 0, 0, 1)
 
     glRotatef(angle_x, 1, 0, 0)
-    glRotatef(angle_y, 0, 1, 0)
+    glRotatef(angle_y, 0, 0, 1)
     draw_sphere(1, W, H)
 
     glutSwapBuffers()
-
 
 def reshape(width, height):
     glViewport(0, 0, width, height)
@@ -84,30 +97,39 @@ def reshape(width, height):
     glMatrixMode(GL_MODELVIEW)
 
 
-def mouse_motion(x, y):
-    global last_x, last_y, angle_x, angle_y
-    dx = x - last_x
-    dy = y - last_y
-    last_x, last_y = x, y
-    
-    angle_y += dx * 0.1  # Rotate left/right
-    angle_x += dy * 0.1  # Rotate up/down
+def keyboard(key, x, y):
+    global angle_x, angle_y
+    if key == b'w':
+        angle_x -= 5
+    elif key == b's':
+        angle_x += 5
+    elif key == b'a':
+        angle_y -= 5
+    elif key == b'd':
+        angle_y += 5
     glutPostRedisplay()
 
+def idle():
+    global angle_sun
+    angle_sun += 0.5  # Adjust speed of sun movement
+    if angle_sun >= 360:
+        angle_sun -= 360  # Keep it within 0-360 degrees
+    glutPostRedisplay()
 
 def main():
     glutInit(sys.argv)
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH)
     glutInitWindowSize(600, 600)
-    glutCreateWindow(b"Mouse Controlled Earth")
+    glutCreateWindow(b"Navigable Earth")
 
     glutDisplayFunc(display)
+    glutIdleFunc(display)
     glutReshapeFunc(reshape)
-    glutMotionFunc(mouse_motion)
+    glutKeyboardFunc(keyboard)
     
     glEnable(GL_DEPTH_TEST)
     glClearColor(0, 0, 0, 1)
-    setup_lighting()
+    # setup_lighting()
     
     glutMainLoop()
 
