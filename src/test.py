@@ -5,11 +5,10 @@ from OpenGL.GLU import *
 import math
 from PIL import Image
 
-angle_x, angle_y = 0, 0  # Rotation angles for navigation
-angle_sun = 0
+angle_x, angle_y, angle_sun = 0, 0, 0  # Rotation angles for navigation
 
 # Load image
-image = Image.open("map1.png").convert("RGB")
+image = Image.open("map2.jpg").convert("RGB")
 image_width, image_height = image.size
 pixels = image.load()
 
@@ -83,7 +82,7 @@ def display():
     glLoadIdentity()
     gluLookAt(5, 0, 0, 0, 0, 0, 0, 0, 1)
 
-    glRotatef(angle_x, 1, 0, 0)
+    glRotatef(angle_x, 0, 1, 0)
     glRotatef(angle_y, 0, 0, 1)
     draw_sphere(1, W, H)
 
@@ -95,7 +94,6 @@ def reshape(width, height):
     glLoadIdentity()
     gluPerspective(45, width / height, 1, 10)
     glMatrixMode(GL_MODELVIEW)
-
 
 def keyboard(key, x, y):
     global angle_x, angle_y
