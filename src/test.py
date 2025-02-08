@@ -6,7 +6,7 @@ import math
 from PIL import Image
 import numpy as np
 
-angle_x, angle_y, angle_sun = 0, 0, 0 # angles in degrees
+angle_y, angle_z, angle_sun = 0, 0, 0 # angles in degrees
 H, W = 200, 200  # Sphere resolution
 image = Image.open("map2.jpg").convert("RGB")
 image_width, image_height = image.size
@@ -20,6 +20,7 @@ def setup_lighting():
     glEnable(GL_COLOR_MATERIAL)
     glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
 
+# Equirectangular projection
 def draw_sphere(radius, slices, stacks):
     setup_lighting()
 
@@ -60,12 +61,24 @@ def draw_sphere(radius, slices, stacks):
     glEnable(GL_LIGHTING)  # Re-enable lighting
 
 
-
+def correct_angles_to_lat_lon(angle_y, angle_z):
+    lon = ((angle_z + 180) % 360) - 180
+    lat = max(min(angle_y, 90), -90)
+    return lat, lon
 
 def map_pixel_to_sphere(i, j, width, height):
-    lat = math.pi * (j / height - 0.5)
-    lon = 2 * math.pi * (i / width - 0.5)
-    return lat, lon
+    """Maps pixel (i, j) to latitude/longitude, then converts to (x, y, z) coordinates on a unit sphere."""
+    # Convert pixel coordinates to latitude (-π/2 to π/2) and longitude (-π to π)
+    lat = math.pi * (j / height - 0.5)  # Latitude range: [-π/2, π/2]
+    lon = 2 * math.pi * (i / width - 0.5)  # Longitude range: [-π, π]
+
+    # Convert (lat, lon) to (x, y, z) on the sphere
+    r = 1  # Unit sphere
+    z = r * math.sin(lat)
+    y = r * math.cos(lat) * math.sin(lon)
+    x = r * math.cos(lat) * math.cos(lon)
+
+    return x, y, z, lat, lon
 
 def find_closest_quad(lat, lon, slices, stacks):
     closest_i = round((lat / math.pi + 0.5) * stacks)
@@ -78,38 +91,38 @@ def generate_map_image(width, height):
     new_image = Image.new("RGB", (width, height))
     for i in range(width):
         for j in range(height):
-            lat, lon = map_pixel_to_sphere(i, j, width, height)
-            color = find_closest_quad(correct(lat-angle_x*math.pi/180.0,0.5*math.pi), correct(lon-angle_y*math.pi/180.0,math.pi), W, H)
+            x, y, z, lat, lon = map_pixel_to_sphere(i, j, width, height)
+            color = find_closest_quad(correct(lat-angle_y*math.pi/180.0,0.5*math.pi), correct(lon-angle_z*math.pi/180.0,math.pi), W, H)
             new_image.putpixel((i, j), color)
     new_image.show()
 
 
 
 def display():
-    global angle_x, angle_y, angle_sun
+    global angle_y, angle_z, angle_sun
     angle_sun = (angle_sun + 1.5) % 360
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glLoadIdentity()
     gluLookAt(-5, 0, 0, 0, 0, 0, 0, 0, 1)
-    glRotatef(angle_x, 0, 1, 0)
-    glRotatef(angle_y, 0, 0, 1)
+    glRotatef(angle_y, 0, 1, 0)
+    glRotatef(angle_z, 0, 0, 1)
     draw_sphere(1, W, H)
     glutSwapBuffers()
 
 def keyboard(key, x, y):
-    global angle_x, angle_y
+    global angle_y, angle_z
     if key == b'w':
-        angle_x -= 5
-    elif key == b's':
-        angle_x += 5
-    elif key == b'a':
         angle_y -= 5
-    elif key == b'd':
+    elif key == b's':
         angle_y += 5
+    elif key == b'a':
+        angle_z -= 5
+    elif key == b'd':
+        angle_z += 5
     elif key == b'c': 
         generate_map_image(256, 128)
     
-    print(angle_x, angle_y)
+    print("y ",angle_y," z ", angle_z)
     glutPostRedisplay()
 
 def reshape(width, height):
