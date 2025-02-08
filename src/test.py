@@ -116,9 +116,9 @@ def keyboard(key, x, y):
     elif key == b's':
         angle_y += 5
     elif key == b'a':
-        angle_z -= 5
-    elif key == b'd':
         angle_z += 5
+    elif key == b'd':
+        angle_z -= 5
     elif key == b'c': 
         generate_map_image(256, 128)
     
