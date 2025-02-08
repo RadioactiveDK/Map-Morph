@@ -122,6 +122,7 @@ def keyboard(key, x, y):
     elif key == b'c': 
         generate_map_image(256, 128)
     
+    angle_y,angle_z = correct_angles_to_lat_lon(angle_y=angle_y,angle_z=angle_z)    
     print("y ",angle_y," z ", angle_z)
     glutPostRedisplay()
 
