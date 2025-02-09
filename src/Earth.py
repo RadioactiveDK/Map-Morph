@@ -8,10 +8,11 @@ import numpy as np
 
 angle_y, angle_z, angle_sun = 0, 0, 0 # angles in degrees
 H, W = 200, 200  # Sphere resolution
-image = Image.open("tissot.png").convert("RGB") # map image
+image = Image.open("tissot.png").convert("RGB") # Map image to load
 image_width, image_height = image.size
 pixels = image.load()
 
+# Sun and ambient light
 def setup_lighting():
     glEnable(GL_LIGHTING)
     glEnable(GL_LIGHT0)
@@ -20,11 +21,10 @@ def setup_lighting():
     glEnable(GL_COLOR_MATERIAL)
     glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
 
-# Equirectangular projection
+# Equirectangular projection of Map on Sphere
 def draw_sphere(radius, slices, stacks):
     setup_lighting()
 
-    # Draw Sphere
     for i in range(stacks):
         lat0, lat1 = -math.pi * (-0.5 + i / stacks), -math.pi * (-0.5 + (i + 1) / stacks)
         z0, zr0, z1, zr1 = math.sin(lat0), math.cos(lat0), math.sin(lat1), math.cos(lat1)
@@ -49,30 +49,19 @@ def draw_sphere(radius, slices, stacks):
             glVertex3f(x * zr1 * radius, y * zr1 * radius, z1 * radius)
         glEnd()
 
-    # Draw Axis (Z-axis Line Through the Sphere)
-    glDisable(GL_LIGHTING)  # Disable lighting for a solid color line
-    glColor3f(1, 0, 0)  # Red color for the axis
+    # Draw Axis of Earth
+    glDisable(GL_LIGHTING)
+    glColor3f(1, 0, 0)
 
     glBegin(GL_LINES)
-    glVertex3f(0, 0, -radius-0.5)  # Start at bottom of the sphere
-    glVertex3f(0, 0, radius+0.5)  # End at top of the sphere
+    glVertex3f(0, 0, -radius-0.5)
+    glVertex3f(0, 0, radius+0.5) 
     glEnd()
 
-    glEnable(GL_LIGHTING)  # Re-enable lighting
+    glEnable(GL_LIGHTING)
 
-
-def correct_angles_to_lat_lon(lat1, lon1, lat2, lon2):
-    """
-    Applies a latitude (lat1) and longitude (lon1) rotation to a point at (lat2, lon2)
-    and returns the new latitude and longitude.
-    
-    Parameters:
-        lat1, lon1: Rotation angles in degrees
-        lat2, lon2: Original latitude and longitude in degrees
-    
-    Returns:
-        (lat', lon'): The transformed latitude and longitude in degrees.
-    """
+# Find effective latitude and longitude for the new map
+def effective_lat_lon(lat1, lon1, lat2, lon2):
     # Convert degrees to radians
     lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
     
@@ -100,56 +89,38 @@ def correct_angles_to_lat_lon(lat1, lon1, lat2, lon2):
     # Convert back to degrees
     return math.degrees(lat_new), math.degrees(lon_new)
 
-
-def standardize_angles(angle_y, angle_z):
-    lon = ((angle_z + 180) % 360) - 180
-    lat = max(min(angle_y, 90), -90)
-    return lat, lon
-
-def map_pixel_to_sphere(i, j, width, height):
-    """Maps pixel (i, j) to latitude/longitude, then converts to (x, y, z) coordinates on a unit sphere."""
-    # Convert pixel coordinates to latitude (-π/2 to π/2) and longitude (-π to π)
-    lat = math.pi * (j / height - 0.5)  # Latitude range: [-π/2, π/2]
-    lon = 2 * math.pi * (i / width - 0.5)  # Longitude range: [-π, π]
-
-    # Convert (lat, lon) to (x, y, z) on the sphere
-    r = 1  # Unit sphere
-    z = r * math.sin(lat)
-    y = r * math.cos(lat) * math.sin(lon)
-    x = r * math.cos(lat) * math.cos(lon)
-
-    return x, y, z, lat, lon
-
-def find_closest_quad(lat, lon, slices, stacks):
+# Find color at (lat, lon) in the map
+def find_pixel_color(lat, lon, slices, stacks):
     closest_i = round((lat / math.pi + 0.5) * stacks)
     closest_j = round((lon / (2 * math.pi) + 0.5) * slices)
     img_x = min(max(int(closest_j / slices * (image_width - 1)), 0), image_width - 1)
     img_y = min(max(int(closest_i / stacks * (image_height - 1)), 0), image_height - 1)
     return pixels[img_x, img_y]
 
+# Origin translation on Equirectangular mapping
 def generate_map_image(width, height):
     new_image = Image.new("RGB", (width, height))
     for i in range(width):
         for j in range(height):
             # Convert pixel to sphere coordinates
-            x, y, z, lat2, lon2 = map_pixel_to_sphere(i, j, width, height)
+            lat2 = math.pi * (j / height - 0.5)
+            lon2 = 2 * math.pi * (i / width - 0.5)
             
             # Correct the latitude and longitude using the rotation
-            lat_corrected, lon_corrected = correct_angles_to_lat_lon(-angle_y, -angle_z, math.degrees(lat2), math.degrees(lon2))
+            lat_corrected, lon_corrected = effective_lat_lon(-angle_y, -angle_z, math.degrees(lat2), math.degrees(lon2))
             
             # Convert back to radians for lookup
             lat_corrected = math.radians(lat_corrected)
             lon_corrected = math.radians(lon_corrected)
             
             # Find the closest texture color from the map image
-            color = find_closest_quad(lat_corrected, lon_corrected, W, H)
+            color = find_pixel_color(lat_corrected, lon_corrected, W, H)
             
             new_image.putpixel((i, j), color)
     
     new_image.show()
 
-
-
+# Display/Idle function
 def display():
     global angle_y, angle_z, angle_sun
     angle_sun = (angle_sun + 1.5) % 360
@@ -161,6 +132,7 @@ def display():
     draw_sphere(1, W, H)
     glutSwapBuffers()
 
+# Keyboard events
 def keyboard(key, x, y):
     global angle_y, angle_z
     if key == b'w':
@@ -174,10 +146,14 @@ def keyboard(key, x, y):
     elif key == b'c': 
         generate_map_image(512, 256)
     
-    angle_y,angle_z = standardize_angles(angle_y=angle_y,angle_z=angle_z)    
+    # Standardize the angles
+    lon = ((angle_z + 180) % 360) - 180
+    lat = max(min(angle_y, 90), -90)
+
     print("y ",angle_y," z ", angle_z)
     glutPostRedisplay()
 
+# Window reshape function
 def reshape(width, height):
     glViewport(0, 0, width, height)
     glMatrixMode(GL_PROJECTION)
