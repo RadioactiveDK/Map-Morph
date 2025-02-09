@@ -60,8 +60,47 @@ def draw_sphere(radius, slices, stacks):
 
     glEnable(GL_LIGHTING)  # Re-enable lighting
 
+import math
 
-def correct_angles_to_lat_lon(angle_y, angle_z):
+def correct_angles_to_lat_lon(lat1, lon1, lat2, lon2):
+    """
+    Applies a latitude (lat1) and longitude (lon1) rotation to a point at (lat2, lon2)
+    and returns the new latitude and longitude.
+    
+    Parameters:
+        lat1, lon1: Rotation angles in degrees
+        lat2, lon2: Original latitude and longitude in degrees
+    
+    Returns:
+        (lat', lon'): The transformed latitude and longitude in degrees.
+    """
+    # Convert degrees to radians
+    lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+    
+    # Convert (lat2, lon2) to Cartesian coordinates (x, y, z)
+    x = math.cos(lat2) * math.cos(lon2)
+    y = math.cos(lat2) * math.sin(lon2)
+    z = math.sin(lat2)
+
+    # Rotate around Y-axis (latitude offset)
+    x_prime = x * math.cos(lat1) + z * math.sin(lat1)
+    y_prime = y
+    z_prime = -x * math.sin(lat1) + z * math.cos(lat1)
+
+    # Rotate around Z-axis (longitude offset)
+    x_double_prime = x_prime * math.cos(lon1) - y_prime * math.sin(lon1)
+    y_double_prime = x_prime * math.sin(lon1) + y_prime * math.cos(lon1)
+    z_double_prime = z_prime
+
+    # Convert back to latitude and longitude
+    lat_new = math.asin(z_double_prime)
+    lon_new = math.atan2(y_double_prime, x_double_prime)
+
+    # Convert back to degrees
+    return math.degrees(lat_new), math.degrees(lon_new)
+
+
+def standardize_angles(angle_y, angle_z):
     lon = ((angle_z + 180) % 360) - 180
     lat = max(min(angle_y, 90), -90)
     return lat, lon
@@ -91,9 +130,21 @@ def generate_map_image(width, height):
     new_image = Image.new("RGB", (width, height))
     for i in range(width):
         for j in range(height):
-            x, y, z, lat, lon = map_pixel_to_sphere(i, j, width, height)
-            color = find_closest_quad(correct(lat-angle_y*math.pi/180.0,0.5*math.pi), correct(lon-angle_z*math.pi/180.0,math.pi), W, H)
+            # Convert pixel to sphere coordinates
+            x, y, z, lat2, lon2 = map_pixel_to_sphere(i, j, width, height)
+            
+            # Correct the latitude and longitude using the rotation
+            lat_corrected, lon_corrected = correct_angles_to_lat_lon(-angle_y, -angle_z, math.degrees(lat2), math.degrees(lon2))
+            
+            # Convert back to radians for lookup
+            lat_corrected = math.radians(lat_corrected)
+            lon_corrected = math.radians(lon_corrected)
+            
+            # Find the closest texture color from the map image
+            color = find_closest_quad(lat_corrected, lon_corrected, W, H)
+            
             new_image.putpixel((i, j), color)
+    
     new_image.show()
 
 
@@ -122,7 +173,7 @@ def keyboard(key, x, y):
     elif key == b'c': 
         generate_map_image(256, 128)
     
-    angle_y,angle_z = correct_angles_to_lat_lon(angle_y=angle_y,angle_z=angle_z)    
+    angle_y,angle_z = standardize_angles(angle_y=angle_y,angle_z=angle_z)    
     print("y ",angle_y," z ", angle_z)
     glutPostRedisplay()
 
