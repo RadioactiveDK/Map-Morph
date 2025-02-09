@@ -8,7 +8,7 @@ import numpy as np
 
 angle_y, angle_z, angle_sun = 0, 0, 0 # angles in degrees
 H, W = 200, 200  # Sphere resolution
-image = Image.open("image.png").convert("RGB") # map image
+image = Image.open("tissot.png").convert("RGB") # map image
 image_width, image_height = image.size
 pixels = image.load()
 
