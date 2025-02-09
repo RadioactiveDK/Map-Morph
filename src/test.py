@@ -60,7 +60,6 @@ def draw_sphere(radius, slices, stacks):
 
     glEnable(GL_LIGHTING)  # Re-enable lighting
 
-import math
 
 def correct_angles_to_lat_lon(lat1, lon1, lat2, lon2):
     """
@@ -93,6 +92,8 @@ def correct_angles_to_lat_lon(lat1, lon1, lat2, lon2):
     z_double_prime = z_prime
 
     # Convert back to latitude and longitude
+    if(z_double_prime<-1):
+        z_double_prime = -1
     lat_new = math.asin(z_double_prime)
     lon_new = math.atan2(y_double_prime, x_double_prime)
 
@@ -171,7 +172,7 @@ def keyboard(key, x, y):
     elif key == b'd':
         angle_z -= 5
     elif key == b'c': 
-        generate_map_image(256, 128)
+        generate_map_image(512, 256)
     
     angle_y,angle_z = standardize_angles(angle_y=angle_y,angle_z=angle_z)    
     print("y ",angle_y," z ", angle_z)
