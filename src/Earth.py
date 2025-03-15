@@ -6,11 +6,12 @@ import math
 import pygame
 from PIL import Image
 
-
+maps = ["map.png","globe.png","tissot.png"]
+view = 0
 keys = {}
 angle_y, angle_z, angle_sun = 0, 0, 0 # angles in degrees
 H, W = 200, 200  # Sphere resolution
-image = Image.open("tissot.png").convert("RGB") # Map image to load
+image = Image.open(maps[view]).convert("RGB") # Map image to load
 image_width, image_height = image.size
 pixels = image.load()
 
@@ -164,9 +165,15 @@ def display():
 
 # Keyboard events
 def key_down(key, x, y):
-    global keys
+    global keys, view, image, image_width, image_height, pixels
+
     if key == b'c' and all(not state for state in keys.values()): 
         generate_map_image(512, 256)
+    elif key == b'v':
+        view = (view + 1)%3
+        image = Image.open(maps[view]).convert("RGB") # Map image to load
+        image_width, image_height = image.size
+        pixels = image.load()
     keys[key] = True
 
 def key_up(key, x, y):
