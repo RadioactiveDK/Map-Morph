@@ -3,9 +3,11 @@ from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
 import math
+import pygame
 from PIL import Image
-import numpy as np
 
+
+keys = {}
 angle_y, angle_z, angle_sun = 0, 0, 0 # angles in degrees
 H, W = 200, 200  # Sphere resolution
 image = Image.open("tissot.png").convert("RGB") # Map image to load
@@ -16,10 +18,38 @@ pixels = image.load()
 def setup_lighting():
     glEnable(GL_LIGHTING)
     glEnable(GL_LIGHT0)
-    light_position = [5 * math.cos(math.radians(angle_sun)), 5 * math.sin(math.radians(angle_sun)), 0, 0]
+
+    # Position of the Sun (Directional Light)
+    light_position = [5 * math.cos(math.radians(angle_sun)), 
+                      5 * math.sin(math.radians(angle_sun)), 
+                      0, 1]  # Directional light (w=1 for positional)
     glLightfv(GL_LIGHT0, GL_POSITION, light_position)
+
+    # Ambient Light (Soft global illumination)
+    ambient_light = [0.2, 0.2, 0.2, 1.0]  # Dim white light
+    glLightfv(GL_LIGHT0, GL_AMBIENT, ambient_light)
+
+    # Diffuse Light (Shading effect)
+    diffuse_light = [0.6, 0.6, 0.6, 1.0]  # Bright white
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse_light)
+
+    # Specular Light (Shiny reflection like the sun’s highlight)
+    specular_light = [0.5, 0.5, 0.5, 0.5]  # Strong white light for highlights
+    glLightfv(GL_LIGHT0, GL_SPECULAR, specular_light)
+
+    # Material Properties to enhance lighting effects
     glEnable(GL_COLOR_MATERIAL)
     glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
+
+    # Specular reflection on the surface
+    material_specular = [1.0, 1.0, 1.0, 1.0]  # White highlight
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, material_specular)
+    
+    # Shininess level (higher values make it shinier)
+    glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 50.0)
+
+    # Enable Normalization for proper lighting
+    glEnable(GL_NORMALIZE)
 
 # Equirectangular projection of Map on Sphere
 def draw_sphere(radius, slices, stacks):
@@ -133,25 +163,36 @@ def display():
     glutSwapBuffers()
 
 # Keyboard events
-def keyboard(key, x, y):
-    global angle_y, angle_z
-    if key == b'w':
-        angle_y -= 5
-    elif key == b's':
-        angle_y += 5
-    elif key == b'a':
-        angle_z += 5
-    elif key == b'd':
-        angle_z -= 5
-    elif key == b'c': 
+def key_down(key, x, y):
+    global keys
+    if key == b'c' and all(not state for state in keys.values()): 
         generate_map_image(512, 256)
+    keys[key] = True
+
+def key_up(key, x, y):
+    global keys
+    keys[key] = False
+
+# Timer funciton
+def timer(value):
+    global angle_y, angle_z, keys
+    speed = 5
+    if keys.get(b'w',False):
+        angle_y -= speed
+    if keys.get(b's',False):
+        angle_y += speed
+    if keys.get(b'a',False):
+        angle_z += speed
+    if keys.get(b'd',False):
+        angle_z -= speed
     
     # Standardize the angles
-    lon = ((angle_z + 180) % 360) - 180
-    lat = max(min(angle_y, 90), -90)
+    angle_z = ((angle_z + 180) % 360) - 180
+    angle_y = max(min(angle_y, 90), -90)
 
     print("y ",angle_y," z ", angle_z)
     glutPostRedisplay()
+    glutTimerFunc(16,timer,0)
 
 # Window reshape function
 def reshape(width, height):
@@ -162,14 +203,21 @@ def reshape(width, height):
     glMatrixMode(GL_MODELVIEW)
 
 def main():
+    pygame.mixer.init()
+    pygame.mixer.music.load("sound.mp3")
+    pygame.mixer.music.play(-1) 
+
     glutInit(sys.argv)
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH)
     glutInitWindowSize(600, 600)
-    glutCreateWindow(b"Navigable Earth")
+    glutCreateWindow(b"Earth")
+
     glutDisplayFunc(display)
-    glutIdleFunc(display)
+    glutTimerFunc(0,timer,0)
     glutReshapeFunc(reshape)
-    glutKeyboardFunc(keyboard)
+    glutKeyboardFunc(key_down)
+    glutKeyboardUpFunc(key_up)
+    
     glEnable(GL_DEPTH_TEST)
     glClearColor(0, 0, 0, 1)
     glutMainLoop()
