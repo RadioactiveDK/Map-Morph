@@ -6,11 +6,11 @@ import math
 import pygame
 from PIL import Image
 
-maps = ["map.png","globe.png","tissot.png"]
+maps = ["map.png","globe.png","tissot_.png"]
 view = 0
 keys = {}
 angle_y, angle_z, angle_sun = 0, 0, 0 # angles in degrees
-H, W = 300, 300  # Sphere resolution
+H, W = 200, 200  # Sphere resolution
 image = Image.open(maps[view]).convert("RGB") # Map image to load
 image_width, image_height = image.size
 pixels = image.load()
