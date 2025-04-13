@@ -6,11 +6,11 @@ import math
 import pygame
 from PIL import Image
 
-maps = ["map.png","globe.png","tissot_.png"]
+maps = ["map.png","globe.png","tissot_.png","tissot.png"]
 view = 0
 keys = {}
 angle_y, angle_z, angle_sun = 0, 0, 0 # angles in degrees
-H, W = 200, 200  # Sphere resolution
+H, W = 300, 300  # Sphere resolution
 image = Image.open(maps[view]).convert("RGB") # Map image to load
 image_width, image_height = image.size
 pixels = image.load()
@@ -114,6 +114,8 @@ def effective_lat_lon(lat1, lon1, lat2, lon2):
     # Convert back to latitude and longitude
     if(z_double_prime<-1):
         z_double_prime = -1
+    if(z_double_prime>1):
+        z_double_prime = 1
     lat_new = math.asin(z_double_prime)
     lon_new = math.atan2(y_double_prime, x_double_prime)
 
@@ -170,7 +172,7 @@ def key_down(key, x, y):
     if key == b'c' and all(not state for state in keys.values()): 
         generate_map_image(512, 256)
     elif key == b'v':
-        view = (view + 1)%3
+        view = (view + 1)%4
         image = Image.open(maps[view]).convert("RGB") # Map image to load
         image_width, image_height = image.size
         pixels = image.load()
