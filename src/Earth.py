@@ -129,7 +129,8 @@ def find_pixel_color(lat, lon, slices, stacks):
     img_y = min(max(int(closest_i / stacks * (image_height - 1)), 0), image_height - 1)
     return pixels[img_x, img_y]
 
-# Origin translation on Equirectangular mapping
+# Origin translation on Equirectangular mapping 
+# plate carrée projection: the standard parallel is the equator
 def generate_map_image(width, height):
     new_image = Image.new("RGB", (width, height))
     for i in range(width):
