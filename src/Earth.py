@@ -10,46 +10,45 @@ maps = ["map.png","globe.png","tissot_.png","tissot.png"]
 view = 0
 keys = {}
 angle_y, angle_z, angle_sun = 0, 0, 0 # angles in degrees
-H, W = 300, 300  # Sphere resolution
+H, W = 300, 300  # Earth resolution
 image = Image.open(maps[view]).convert("RGB") # Map image to load
 image_width, image_height = image.size
 pixels = image.load()
 
-# Sun and ambient light
 def setup_lighting():
     glEnable(GL_LIGHTING)
     glEnable(GL_LIGHT0)
 
-    # Position of the Sun (Directional Light)
+    # Position of the Sun (Directional Light w=1)
     light_position = [5 * math.cos(math.radians(angle_sun)), 
                       5 * math.sin(math.radians(angle_sun)), 
-                      0, 1]  # Directional light (w=1 for positional)
+                      0, 1]
     glLightfv(GL_LIGHT0, GL_POSITION, light_position)
 
-    # Ambient Light (Soft global illumination)
-    ambient_light = [0.2, 0.2, 0.2, 1.0]  # Dim white light
+    # Ambient Light
+    ambient_light = [0.2, 0.2, 0.2, 1.0]
     glLightfv(GL_LIGHT0, GL_AMBIENT, ambient_light)
 
-    # Diffuse Light (Shading effect)
-    diffuse_light = [0.6, 0.6, 0.6, 1.0]  # Bright white
+    # Diffuse Light
+    diffuse_light = [0.6, 0.6, 0.6, 1.0]
     glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse_light)
 
-    # Specular Light (Shiny reflection like the sun’s highlight)
-    specular_light = [0.5, 0.5, 0.5, 0.5]  # Strong white light for highlights
+    # Specular Light
+    specular_light = [0.5, 0.5, 0.5, 0.5]
     glLightfv(GL_LIGHT0, GL_SPECULAR, specular_light)
 
-    # Material Properties to enhance lighting effects
+    # Material Properties
     glEnable(GL_COLOR_MATERIAL)
     glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
 
-    # Specular reflection on the surface
-    material_specular = [1.0, 1.0, 1.0, 1.0]  # White highlight
+    # Specular reflection
+    material_specular = [1.0, 1.0, 1.0, 1.0]
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, material_specular)
     
-    # Shininess level (higher values make it shinier)
+    # Shininess level
     glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 50.0)
 
-    # Enable Normalization for proper lighting
+    # Enable Normalization
     glEnable(GL_NORMALIZE)
 
 # Equirectangular projection of Map on Sphere
@@ -101,12 +100,12 @@ def effective_lat_lon(lat1, lon1, lat2, lon2):
     y = math.cos(lat2) * math.sin(lon2)
     z = math.sin(lat2)
 
-    # Rotate around Y-axis (latitude offset)
+    # Rotate around Y-axis
     x_prime = x * math.cos(lat1) + z * math.sin(lat1)
     y_prime = y
     z_prime = -x * math.sin(lat1) + z * math.cos(lat1)
 
-    # Rotate around Z-axis (longitude offset)
+    # Rotate around Z-axis
     x_double_prime = x_prime * math.cos(lon1) - y_prime * math.sin(lon1)
     y_double_prime = x_prime * math.sin(lon1) + y_prime * math.cos(lon1)
     z_double_prime = z_prime
@@ -173,7 +172,7 @@ def key_down(key, x, y):
         generate_map_image(512, 256)
     elif key == b'v':
         view = (view + 1)%4
-        image = Image.open(maps[view]).convert("RGB") # Map image to load
+        image = Image.open(maps[view]).convert("RGB") 
         image_width, image_height = image.size
         pixels = image.load()
     

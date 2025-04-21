@@ -8,6 +8,6 @@
 - Run `Earth.py` using `python Earth.py`
 
 # Key Bindings
-- `V`: Change the Earth Map (Select among 4 various maps)
+- `V`: Change the Earth Map (Select among 4 maps)
 - `A,W,S,D`: Navigate through Earth
 - `C`: Capture a new map with a shifted center
